@@ -220,7 +220,10 @@ int motor_safety_daemon() {
       // This detects any stalling
       // Stalling is when a motor draws power but isn't moving AT ALL whatsoever
       if (monitored_motors[i].current() > 2.0 && fabs(actual_velocity) < 5.0){
-        // Add any alert here
+        Controller1.Screen.clearLine(3);
+        Controller1.Screen.setCursor(3, 1);
+        Controller1.Screen.print("Stalling detected.");
+        Controller1.rumble(".");
       }
     }
 
@@ -235,7 +238,7 @@ int motor_safety_daemon() {
       Controller1.Screen.clearLine(3);
       Controller1.Screen.setCursor(3, 1);
       Controller1.Screen.print("Warning: Motors are warm.");
-      Controller1.rumble("."); // Short single buzz
+      Controller1.rumble(".."); // Short single buzz
     } else {
       Controller1.Screen.clearLine(3);
     }
