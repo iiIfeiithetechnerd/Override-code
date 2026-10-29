@@ -165,7 +165,7 @@ int motor_safety_daemon() {
       double actual_velocity = monitored_motors[i].velocity(rpm);
 
       // This is the critical overheating trigger
-      if (currentTemp >= TEMP_CRITICAL_THRESHOLD){
+      if (current_temp >= TEMP_CRITICAL_THRESHOLD){
 
         critical_found = true;
 
@@ -173,7 +173,7 @@ int motor_safety_daemon() {
         monitored_motors[i].setMaxTorque(30, percentUnits::pct);
 
       } // This is the warning overheating trigger
-      else if (current_temp >= TEMP_CRITICAL_THRESHOLD){
+      else if (current_temp >= TEMP_WARNING_THRESHOLD){
 
         warning_found = true;
 
