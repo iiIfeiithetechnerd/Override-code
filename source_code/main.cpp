@@ -27,11 +27,15 @@ brain Brain;
 
 
 // Robot configuration code.
-motor LeftDriveSmart = motor(PORT1, ratio18_1, false);
-motor RightDriveSmart = motor(PORT2, ratio18_1, true);
+motor LeftDriveSmart = motor(PORT2, ratio18_1, false);
+motor RightDriveSmart = motor(PORT1, ratio18_1, true);
 drivetrain Drivetrain = drivetrain(LeftDriveSmart, RightDriveSmart, 319.19, 295, 40, mm, 1);
 
 controller Controller1 = controller(primary);
+motor claw_motor = motor(PORT11, ratio18_1, false);
+
+motor lift_motor = motor(PORT12, ratio18_1, false);
+
 
 
 // generating and setting random seed
@@ -68,6 +72,8 @@ void playVexcodeSound(const char *soundName) {
 // define variable for remote controller enable/disable
 bool RemoteControlCodeEnabled = true;
 // define variables used for controlling motors based on controller inputs
+bool Controller1LeftShoulderControlMotorsStopped = true;
+bool Controller1RightShoulderControlMotorsStopped = true;
 bool DrivetrainLNeedsToBeStopped_Controller1 = true;
 bool DrivetrainRNeedsToBeStopped_Controller1 = true;
 
@@ -121,6 +127,30 @@ int rc_auto_loop_function_Controller1() {
         RightDriveSmart.setVelocity(drivetrainRightSideSpeed, percent);
         RightDriveSmart.spin(forward);
       }
+      // check the ButtonL1/ButtonL2 status to control claw_motor
+      if (Controller1.ButtonL1.pressing()) {
+        claw_motor.spin(forward);
+        Controller1LeftShoulderControlMotorsStopped = false;
+      } else if (Controller1.ButtonL2.pressing()) {
+        claw_motor.spin(reverse);
+        Controller1LeftShoulderControlMotorsStopped = false;
+      } else if (!Controller1LeftShoulderControlMotorsStopped) {
+        claw_motor.stop();
+        // set the toggle so that we don't constantly tell the motor to stop when the buttons are released
+        Controller1LeftShoulderControlMotorsStopped = true;
+      }
+      // check the ButtonR1/ButtonR2 status to control lift_motor
+      if (Controller1.ButtonR1.pressing()) {
+        lift_motor.spin(forward);
+        Controller1RightShoulderControlMotorsStopped = false;
+      } else if (Controller1.ButtonR2.pressing()) {
+        lift_motor.spin(reverse);
+        Controller1RightShoulderControlMotorsStopped = false;
+      } else if (!Controller1RightShoulderControlMotorsStopped) {
+        lift_motor.stop();
+        // set the toggle so that we don't constantly tell the motor to stop when the buttons are released
+        Controller1RightShoulderControlMotorsStopped = true;
+      }
     }
     // wait before repeating the process
     wait(20, msec);
@@ -131,6 +161,7 @@ int rc_auto_loop_function_Controller1() {
 task rc_auto_loop_task_Controller1(rc_auto_loop_function_Controller1);
 
 #pragma endregion VEXcode Generated Robot Configuration
+
 
 /*---------------------------------------------------------------------------------------------------*/
 /*                                                                                                   */
@@ -150,7 +181,7 @@ const double TEMP_WARNING_THRESHOLD = 45.0; // Early warning, measured in C
 const double TEMP_CRITICAL_THRESHOLD = 52.0; // Critical temp threshold
 
 // every monitored motor goes here
-motor monitored_motors [] = { };
+motor monitored_motors [] = {LeftDriveSmart, RightDriveSmart, claw_motor, lift_motor};
 const int NUM_MOTORS = sizeof(monitored_motors) / sizeof(motor);
 
 // this is the safety daemon
@@ -227,4 +258,3 @@ int main() {
     wait(20, msec);
   }
 }
-
