@@ -193,7 +193,7 @@ int motor_safety_daemon() {
     for (int i = 0; i < NUM_MOTORS; i++){
       // This reads the current telemetry
       double current_temp = monitored_motors[i].temperature(temperatureUnits::celsius);
-      double actual_velocity = monitored_motors[i].velocity(rpm);
+      // double actual_velocity = monitored_motors[i].velocity(rpm);
 
       // This is the critical overheating trigger
       if (current_temp >= TEMP_CRITICAL_THRESHOLD){
@@ -216,33 +216,38 @@ int motor_safety_daemon() {
       else {
         monitored_motors[i].setMaxTorque(100, percentUnits::pct);
       }
-
-      // This detects any stalling
-      // Stalling is when a motor draws power but isn't moving AT ALL whatsoever
-      if (monitored_motors[i].current() > 2.0 && fabs(actual_velocity) < 5.0){
-        Controller1.Screen.clearLine(3);
-        Controller1.Screen.setCursor(3, 1);
-        Controller1.Screen.print("Stalling detected.");
-        Controller1.rumble(".");
-      }
     }
 
     // Driver alert interface
     // This prints warning statuses onto the controller
-    if (critical_found){
-      Controller1.Screen.clearLine(3);
-      Controller1.Screen.setCursor(3, 1);
-      Controller1.Screen.print("!! CRITICAL OVERHEAT DETECTED !!");
-      Controller1.rumble("----"); // Long rumble
-    } else if (warning_found){
-      Controller1.Screen.clearLine(3);
-      Controller1.Screen.setCursor(3, 1);
-      Controller1.Screen.print("Warning: Motors are warm.");
-      Controller1.rumble(".."); // Short single buzz
-    } else {
-      Controller1.Screen.clearLine(3);
+    // Prevents excessive buzzing
+    static bool was_critical = false;
+    static bool was_warning = false;
+
+    // Handle Rumble Triggers (Only fire on initial state transition)
+    if (critical_found && !was_critical) {
+      Controller1.rumble("----");
+      was_critical = true;
+    } else if (!critical_found) {
+      was_critical = false;
     }
 
+    if (warning_found && !was_warning && !critical_found) {
+      Controller1.rumble("..");
+      was_warning = true;
+    } else if (!warning_found) {
+      was_warning = false;
+    }
+
+    // Handle Screen Output & Priority
+    Controller1.Screen.clearLine(3);
+    Controller1.Screen.setCursor(3, 1);
+
+    if (critical_found) {
+      Controller1.Screen.print("!! CRITICAL OVERHEAT DETECTED !!");
+    } else if (warning_found) {
+      Controller1.Screen.print("Warning: Motors are warm.");
+    }
     // DO this in order to keep that CPU happy :)
     // Checks the status every half-second, which is absolutely perfect for telemetry
     this_thread::sleep_for(500);
